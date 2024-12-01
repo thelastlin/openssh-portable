@@ -338,6 +338,21 @@ typedef void foo(const char *, ...) __attribute__((format(printf, 1, 2)));]],
 	 [compiler does not accept __attribute__ on prototype args]) ]
 )
 
+AC_MSG_CHECKING([if compiler supports __attribute__ for symbol visibility])
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[
+extern __attribute__((__visibility__("hidden"))) int hiddenvar;
+extern __attribute__((__visibility__("default"))) int exportedvar;
+extern __attribute__((__visibility__("hidden"))) int hiddenfunc (void);
+extern __attribute__((__visibility__("default"))) int exportedfunc (void);
+void dummyfunc (void) {};]],
+    [[]])],
+    [ AC_MSG_RESULT([yes]) 
+	  AC_DEFINE(HAVE_VISIBILITY, [1],
+	  [compiler supports __attribute__ for symbol visibility]) ],
+    [ AC_MSG_RESULT([no]) ]
+)
+
 AC_MSG_CHECKING([if compiler supports variable length arrays])
 AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM([[#include <stdlib.h>]],
