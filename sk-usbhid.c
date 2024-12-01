@@ -105,7 +105,12 @@
 #ifdef SK_DEBUG
 #define SSH_FIDO_INIT_ARG	FIDO_DEBUG
 #else
-#define SSH_FIDO_INIT_ARG	0
+# ifdef WITH_SK_STANDALONE_LOG
+extern int ssh_sk_fido2_initflags;
+# define SSH_FIDO_INIT_ARG ssh_sk_fido2_initflags
+# else
+# define SSH_FIDO_INIT_ARG	0
+# endif
 #endif
 
 #define MAX_FIDO_DEVICES	8
@@ -149,7 +154,7 @@ static void skdebug(const char *func, const char *fmt, ...)
 static void
 skdebug(const char *func, const char *fmt, ...)
 {
-#if !defined(SK_STANDALONE)
+#if !defined(SK_STANDALONE) || defined(WITH_SK_STANDALONE_LOG)
 	char *msg;
 	va_list ap;
 
