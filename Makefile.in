@@ -279,7 +279,7 @@ libssh-pic.a: $(LIBSSH_PIC_OBJS)
 	$(AR) rv $@ $(LIBSSH_PIC_OBJS)
 	$(RANLIB) $@
 
-$(SK_STANDALONE): $(srcdir)/sk-usbhid.c $(LIBCOMPAT) libssh-pic.a
+$(SK_STANDALONE): $(srcdir)/sk-usbhid.c $(LIBCOMPAT) libssh-pic.a sk-standalone-init.o
 	$(CC) -o $@ -shared $(CFLAGS_NOPIE) $(CPPFLAGS) -DSK_STANDALONE $(PICFLAG) $(srcdir)/sk-usbhid.c \
 	libssh-pic.a $(LDFLAGS_NOPIE) -lopenbsd-compat $(LIBS) $(LIBFIDO2) $(CHANNELLIBS)
 

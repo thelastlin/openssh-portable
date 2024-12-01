@@ -2148,6 +2148,12 @@ AC_ARG_WITH([security-key-standalone],
 	[ enable_sk_standalone=$withval ]
 )
 
+enable_sk_standalone_log=
+AC_ARG_WITH([security-key-standalone-log],
+	[  --with-security-key-standalone-log enable log support for standalone sk-lifido2],
+	[ enable_sk_standalone_log=$withval ]
+)
+
 enable_dsa=
 AC_ARG_ENABLE([dsa-keys],
 	[  --enable-dsa-keys       enable DSA key support [no]],
@@ -3390,6 +3396,15 @@ AC_MSG_CHECKING([whether to build standalone sk-libfido2])
 if test "x$enable_sk_standalone" = "xyes" ; then
 	AC_MSG_RESULT([yes])
 	AC_SUBST([SK_STANDALONE], [sk-libfido2$SHLIBEXT])
+
+	AC_MSG_CHECKING([whether to build standalone sk-libfido2 with log support])
+	if text "x$enable_sk_standalone_log" = "xyes" ; then
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([WITH_SK_STANDALONE_LOG], [],
+		    [Enable syslog support for standalone sk-libfido2])
+	else
+		AC_MSG_RESULT([no])
+	fi
 else
 	AC_MSG_RESULT([no])
 	AC_SUBST([SK_STANDALONE], [""])
