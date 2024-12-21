@@ -79,7 +79,7 @@ struct sk_option {
 	uint8_t required;
 };
 
-#define SSH_SK_VERSION_MAJOR		0x000a0000 /* current API version */
+#define SSH_SK_VERSION_MAJOR		0x000b0000 /* current API version */
 #define SSH_SK_VERSION_MAJOR_MASK	0xffff0000
 
 /* Return the version of the middleware API */
@@ -99,5 +99,14 @@ int sk_sign(uint32_t alg, const uint8_t *data, size_t data_len,
 /* Enumerate all resident keys */
 int sk_load_resident_keys(const char *pin, struct sk_option **options,
     struct sk_resident_key ***rks, size_t *nrks);
+
+/* Free sk_sign_response allocated by provider */
+void sk_free_enroll_response(struct sk_enroll_response *enroll_resp);
+
+/* Free sk_sign_response allocated by provider */
+void sk_free_sign_response(struct sk_sign_response *sign_resp);
+
+/* Free sk_resident_key allocated by provider */
+void sk_free_sk_resident_keys(struct sk_resident_key **rks, size_t nrks);
 
 #endif /* _SK_API_H */

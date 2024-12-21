@@ -78,6 +78,15 @@ struct sshsk_provider {
 	/* Enumerate resident keys */
 	int (*sk_load_resident_keys)(const char *pin, struct sk_option **opts,
 	    struct sk_resident_key ***rks, size_t *nrks);
+
+	/* Free sk_sign_response allocated by provider */
+	void (*sk_free_enroll_response)(struct sk_enroll_response *ptr);
+
+	/* Free sk_sign_response allocated by provider */
+	void (*sk_free_sign_response)(struct sk_sign_response *ptr);
+
+	/* Free sk_resident_key allocated by provider */
+	void (*sk_free_sk_resident_keys)(struct sk_resident_key **rks, size_t nrks);
 };
 
 /* Built-in version */
@@ -168,6 +177,25 @@ sshsk_open(const char *path)
 	if ((ret->sk_load_resident_keys = dlsym(ret->dlhandle,
 	    "sk_load_resident_keys")) == NULL) {
 		error("Provider \"%s\" dlsym(sk_load_resident_keys) "
+		    "failed: %s", path, dlerror());
+		goto fail;
+	}
+
+	if ((ret->sk_free_enroll_response = dlsym(ret->dlhandle,
+	    "sk_free_enroll_response")) == NULL) {
+		error("Provider \"%s\" dlsym(sk_free_enroll_response) "
+		    "failed: %s", path, dlerror());
+		goto fail;
+	}
+	if ((ret->sk_free_sign_response = dlsym(ret->dlhandle,
+	    "sk_free_sign_response")) == NULL) {
+		error("Provider \"%s\" dlsym(sk_free_sign_response) "
+		    "failed: %s", path, dlerror());
+		goto fail;
+	}
+	if ((ret->sk_free_sk_resident_keys = dlsym(ret->dlhandle,
+	    "sk_free_sk_resident_keys")) == NULL) {
+		error("Provider \"%s\" dlsym(sk_free_sk_resident_keys) "
 		    "failed: %s", path, dlerror());
 		goto fail;
 	}
@@ -568,9 +596,9 @@ sshsk_enroll(int type, const char *provider_path, const char *device,
 	r = 0;
  out:
 	sshsk_free_options(opts);
+	skp->sk_free_enroll_response(resp);
 	sshsk_free(skp);
 	sshkey_free(key);
-	sshsk_free_enroll_response(resp);
 	explicit_bzero(randchall, sizeof(randchall));
 	return r;
 }
@@ -746,8 +774,8 @@ sshsk_sign(const char *provider_path, struct sshkey *key,
 	r = 0;
  out:
 	sshsk_free_options(opts);
+	skp->sk_free_sign_response(resp);
 	sshsk_free(skp);
-	sshsk_free_sign_response(resp);
 	sshbuf_free(sig);
 	sshbuf_free(inner_sig);
 	return r;
@@ -883,8 +911,8 @@ sshsk_load_resident(const char *provider_path, const char *device,
 	r = 0;
  out:
 	sshsk_free_options(opts);
+	skp->sk_free_sk_resident_keys(rks, nrks);
 	sshsk_free(skp);
-	sshsk_free_sk_resident_keys(rks, nrks);
 	sshkey_free(key);
 	sshsk_free_resident_key(srk);
 	sshsk_free_resident_keys(srks, nsrks);
