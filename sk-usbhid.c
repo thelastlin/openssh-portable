@@ -90,6 +90,9 @@
 # define sk_enroll		ssh_sk_enroll
 # define sk_sign		ssh_sk_sign
 # define sk_load_resident_keys	ssh_sk_load_resident_keys
+# define sk_free_enroll_response	ssh_sk_free_enroll_response
+# define sk_free_sign_response	ssh_sk_free_sign_response
+# define sk_free_sk_resident_keys	ssh_sk_free_sk_resident_keys
 #endif /* !SK_STANDALONE */
 
 #include "sk-api.h"
@@ -133,6 +136,15 @@ int sk_sign(uint32_t alg, const uint8_t *data, size_t data_len,
 /* Load resident keys */
 int sk_load_resident_keys(const char *pin, struct sk_option **options,
     struct sk_resident_key ***rks, size_t *nrks);
+
+/* Free sk_sign_response allocated by provider */
+void sk_free_enroll_response(struct sk_enroll_response *enroll_resp);
+
+/* Free sk_sign_response allocated by provider */
+void sk_free_sign_response(struct sk_sign_response *sign_resp);
+
+/* Free sk_resident_key allocated by provider */
+void sk_free_sk_resident_keys(struct sk_resident_key **rks, size_t nrks);
 
 static void skdebug(const char *func, const char *fmt, ...)
     __attribute__((__format__ (printf, 2, 3)));
@@ -1477,6 +1489,49 @@ sk_load_resident_keys(const char *pin, struct sk_option **options,
 	free(device);
 	free(rks);
 	return ret;
+}
+
+void
+sk_free_enroll_response(struct sk_enroll_response *enroll_resp)
+{
+	if (enroll_resp == NULL)
+		return;
+	freezero(enroll_resp->key_handle, enroll_resp->key_handle_len);
+	freezero(enroll_resp->public_key, enroll_resp->public_key_len);
+	freezero(enroll_resp->signature, enroll_resp->signature_len);
+	freezero(enroll_resp->attestation_cert, enroll_resp->attestation_cert_len);
+	freezero(enroll_resp->authdata, enroll_resp->authdata_len);
+	freezero(enroll_resp, sizeof(*enroll_resp));
+}
+
+void
+sk_free_sign_response(struct sk_sign_response *sign_resp)
+{
+	if (sign_resp == NULL)
+		return;
+	freezero(sign_resp->sig_r, sign_resp->sig_r_len);
+	freezero(sign_resp->sig_s, sign_resp->sig_s_len);
+	freezero(sign_resp, sizeof(*sign_resp));
+}
+
+void
+sk_free_sk_resident_keys(struct sk_resident_key **rks, size_t nrks)
+{
+	size_t i;
+
+	if (nrks == 0 || rks == NULL)
+		return;
+	for (i = 0; i < nrks; i++) {
+		free(rks[i]->application);
+		freezero(rks[i]->user_id, rks[i]->user_id_len);
+		freezero(rks[i]->key.key_handle, rks[i]->key.key_handle_len);
+		freezero(rks[i]->key.public_key, rks[i]->key.public_key_len);
+		freezero(rks[i]->key.signature, rks[i]->key.signature_len);
+		freezero(rks[i]->key.attestation_cert,
+		    rks[i]->key.attestation_cert_len);
+		freezero(rks[i], sizeof(**rks));
+	}
+	free(rks);
 }
 
 #endif /* ENABLE_SK_INTERNAL */

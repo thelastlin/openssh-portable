@@ -50,7 +50,7 @@
 
 /* #define SK_DEBUG 1 */
 
-#if SSH_SK_VERSION_MAJOR != 0x000a0000
+#if SSH_SK_VERSION_MAJOR != 0x000b0000
 # error SK API has changed, sk-dummy.c needs an update
 #endif
 
@@ -59,6 +59,9 @@
 # define sk_enroll		ssh_sk_enroll
 # define sk_sign		ssh_sk_sign
 # define sk_load_resident_keys	ssh_sk_load_resident_keys
+# define sk_free_enroll_response	ssh_sk_free_enroll_response
+# define sk_free_sign_response	ssh_sk_free_sign_response
+# define sk_free_resident_keys	ssh_sk_free_resident_keys
 #endif /* !SK_STANDALONE */
 
 static void skdebug(const char *func, const char *fmt, ...)
@@ -540,4 +543,34 @@ sk_load_resident_keys(const char *pin, struct sk_option **options,
     struct sk_resident_key ***rks, size_t *nrks)
 {
 	return SSH_SK_ERR_UNSUPPORTED;
+}
+
+void
+sk_free_enroll_response(struct sk_enroll_response *enroll_resp)
+{
+	if (enroll_resp == NULL)
+		return;
+	freezero(enroll_resp->key_handle, enroll_resp->key_handle_len);
+	freezero(enroll_resp->public_key, enroll_resp->public_key_len);
+	freezero(enroll_resp->signature, enroll_resp->signature_len);
+	freezero(enroll_resp->attestation_cert, enroll_resp->attestation_cert_len);
+	freezero(enroll_resp->authdata, enroll_resp->authdata_len);
+	freezero(enroll_resp, sizeof(*enroll_resp));
+}
+
+void
+sk_free_sign_response(struct sk_sign_response *sign_resp)
+{
+	if (sign_resp == NULL)
+		return;
+	freezero(sign_resp->sig_r, sign_resp->sig_r_len);
+	freezero(sign_resp->sig_s, sign_resp->sig_s_len);
+	freezero(sign_resp, sizeof(*sign_resp));
+}
+
+/* sk_load_resident_keys returns SSH_SK_ERR_UNSUPPORTED */
+void
+sk_free_sk_resident_keys(struct sk_resident_key **rks, size_t nrks)
+{
+	return;
 }

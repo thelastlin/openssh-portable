@@ -101,6 +101,9 @@ int ssh_sk_sign(int alg, const uint8_t *message, size_t message_len,
     struct sk_sign_response **sign_response);
 int ssh_sk_load_resident_keys(const char *pin, struct sk_option **opts,
     struct sk_resident_key ***rks, size_t *nrks);
+void ssh_sk_free_enroll_response(struct sk_enroll_response *enroll_resp);
+void ssh_sk_free_sign_response(struct sk_sign_response *enroll_resp);
+void ssh_sk_free_sk_resident_keys(struct sk_resident_key **rks, size_t nrks);
 
 static void
 sshsk_free(struct sshsk_provider *p)
@@ -137,6 +140,9 @@ sshsk_open(const char *path)
 		ret->sk_enroll = ssh_sk_enroll;
 		ret->sk_sign = ssh_sk_sign;
 		ret->sk_load_resident_keys = ssh_sk_load_resident_keys;
+		ret->sk_free_enroll_response = ssh_sk_free_enroll_response;
+		ret->sk_free_sign_response = ssh_sk_free_sign_response;
+		ret->sk_free_sk_resident_keys = ssh_sk_free_sk_resident_keys;
 		return ret;
 #else
 		error("internal security key support not enabled");
@@ -204,29 +210,6 @@ sshsk_open(const char *path)
 fail:
 	sshsk_free(ret);
 	return NULL;
-}
-
-static void
-sshsk_free_enroll_response(struct sk_enroll_response *r)
-{
-	if (r == NULL)
-		return;
-	freezero(r->key_handle, r->key_handle_len);
-	freezero(r->public_key, r->public_key_len);
-	freezero(r->signature, r->signature_len);
-	freezero(r->attestation_cert, r->attestation_cert_len);
-	freezero(r->authdata, r->authdata_len);
-	freezero(r, sizeof(*r));
-}
-
-static void
-sshsk_free_sign_response(struct sk_sign_response *r)
-{
-	if (r == NULL)
-		return;
-	freezero(r->sig_r, r->sig_r_len);
-	freezero(r->sig_s, r->sig_s_len);
-	freezero(r, sizeof(*r));
 }
 
 #ifdef WITH_OPENSSL
@@ -779,26 +762,6 @@ sshsk_sign(const char *provider_path, struct sshkey *key,
 	sshbuf_free(sig);
 	sshbuf_free(inner_sig);
 	return r;
-}
-
-static void
-sshsk_free_sk_resident_keys(struct sk_resident_key **rks, size_t nrks)
-{
-	size_t i;
-
-	if (nrks == 0 || rks == NULL)
-		return;
-	for (i = 0; i < nrks; i++) {
-		free(rks[i]->application);
-		freezero(rks[i]->user_id, rks[i]->user_id_len);
-		freezero(rks[i]->key.key_handle, rks[i]->key.key_handle_len);
-		freezero(rks[i]->key.public_key, rks[i]->key.public_key_len);
-		freezero(rks[i]->key.signature, rks[i]->key.signature_len);
-		freezero(rks[i]->key.attestation_cert,
-		    rks[i]->key.attestation_cert_len);
-		freezero(rks[i], sizeof(**rks));
-	}
-	free(rks);
 }
 
 static void
